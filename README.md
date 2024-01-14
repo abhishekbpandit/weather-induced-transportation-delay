@@ -16,7 +16,7 @@ This project aims to predict flight delays by combining machine learning and nat
   * Extracted all route points using the plan id from FlightPlanDatabase API.
 * **5. Weather Data Collection**
   * At each route point, gathered weather data using the Visual Crossing API.
-**6. Delay Calculation via ML Model**
+* **6. Delay Calculation via ML Model**
   * Calculated potential delays at each route point based on weather data using a pre-trained machine learning model.
   * Adjusted the delay estimate by dividing it by the number of route points.
   * Summed up the delay from all points and took half of this sum as part of the total delay estimate.
@@ -26,7 +26,7 @@ This project aims to predict flight delays by combining machine learning and nat
   * Processed these articles through a Mistral model hosted on GCP using ngrok to extract delay information.
   * Calculated the mean delay value from all articles.
 * **8. Total Delay Estimation**
-  * The total delay estimate was calculated as 70% of the delay predicted by the ML model and 30% of the delay extracted from the NLP pipeline.
+  * The total delay estimate was calculated as 90% of the delay predicted by the ML model and 10% of the delay extracted from the NLP pipeline.
 
 ## ML Model Training
 * Used a dataset containing flight details and delay variables.
