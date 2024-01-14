@@ -1,6 +1,8 @@
 import re
 import requests
+from util.util import time_logger
 
+@time_logger
 def get_plan_id(source, destination):
     """
     Fetches the plan ID for the route between source and destination airports.
@@ -24,6 +26,7 @@ def get_plan_id(source, destination):
         print("Failed to retrieve plan ID:", response.status_code)
         return None
 
+@time_logger
 def calculate_route_points(source, destination):
     """
     Fetches the route points between source and destination airports.

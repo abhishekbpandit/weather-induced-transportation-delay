@@ -3,7 +3,9 @@ from util.util import convert_to_icao, haversine, create_input_vector, first_ele
 from .delay_nlp import estimate_delay_nlp
 from .route import calculate_route_points
 from .weather_data import fetch_weather_data
+from util.util import time_logger
 
+import concurrent.futures
 import joblib
 import xgboost as xgb
 import pandas as pd
@@ -34,7 +36,7 @@ def add_dep_time_to_weather_data(weather_data, departure_time, training_columns)
     # Handle potential list in 'preciptype' and remove 'stations' key
     if isinstance(weather_data['preciptype'], list) and len(weather_data['preciptype']) > 0:
         weather_data['preciptype'] = weather_data['preciptype'][0]
-        
+
     weather_data.pop('stations', None)
 
     # Create DataFrame and handle categorical data
@@ -65,7 +67,7 @@ def estimate_delay(weather_data, bst, num_points):
     input_vector = create_input_vector(weather_data)
 
     # Convert input vector to DMatrix and predict delay
-    dmatrix = xgboost.DMatrix(input_vector)
+    dmatrix = xgb.DMatrix(input_vector)
     predicted_delay = bst.predict(dmatrix)[0]  # Scalar delay prediction
 
     # Ensure non-negative delay
@@ -75,10 +77,11 @@ def estimate_delay(weather_data, bst, num_points):
     delay = timedelta(minutes=float(predicted_delay))
 
     # Adjust delay based on the number of route points
-    adjusted_delay = delay / (num_points * num_points)
+    adjusted_delay = delay / (num_points)
 
     return adjusted_delay
 
+@time_logger
 def calculate_delays(source, destination, departure_date, departure_time):
     """
     Calculates the total delay for a flight from source to destination.
@@ -105,28 +108,33 @@ def calculate_delays(source, destination, departure_date, departure_time):
     num_points = len(route_points)
     training_columns = list(pd.read_csv('data/training.csv').columns)
 
-    # Estimate delay based on NLP analysis
-    delay_nlp = estimate_delay_nlp(source, destination, departure_date)
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        # Start the NLP delay estimation in a separate thread
+        future_delay_nlp = executor.submit(estimate_delay_nlp, source, destination, departure_date)
 
-    # Iterate over route points to calculate total delay
-    for point in route_points:
-        ident, name, lat, lon = point
-        # Calculate distance and travel time to the next point
-        distance = haversine(last_point[2], last_point[3], lat, lon)
-        travel_time = timedelta(hours=distance / avg_speed_kmh)
-        expected_arrival += total_delay + travel_time
+        # Iterate over route points concurrently
+        for point in route_points:
+            ident, name, lat, lon = point
 
-        # Fetch and prepare weather data for model prediction
-        weather_data = fetch_weather_data(lat, lon, expected_arrival)
-        weather_data = add_dep_time_to_weather_data(weather_data, expected_arrival, training_columns)
-        weather_data['distance'] = distance / 1.61  # Convert miles to kilometers
+            # Calculate distance and travel time to the next point
+            distance = haversine(last_point[2], last_point[3], lat, lon)
+            travel_time = timedelta(hours=distance / avg_speed_kmh)
+            expected_arrival += total_delay + travel_time
 
-        # Estimate delay at current route point
-        delay = estimate_delay(weather_data, bst, num_points)
-        total_delay += delay
-        
-        last_point = point
-        print(f"Expected arrival at {name} ({ident}): {expected_arrival} with a delay of {delay}")
-        print('\n\n')
+            # Fetch and prepare weather data for model prediction
+            weather_data = fetch_weather_data(lat, lon, expected_arrival)
+            weather_data = add_dep_time_to_weather_data(weather_data, expected_arrival, training_columns)
+            weather_data['distance'] = distance / 1.61  # Convert miles to kilometers
 
-    return ((total_delay * 0.7) + (0.3 * delay_nlp))
+            # Estimate delay at current route point
+            delay = estimate_delay(weather_data, bst, num_points)
+            total_delay += delay
+
+            last_point = point
+            #print(f"Expected arrival at {name} ({ident}): {expected_arrival} with a delay of {delay}")
+            #print('\n\n')
+
+        # Retrieve the NLP delay result
+        delay_nlp = future_delay_nlp.result()
+
+    return ((total_delay * 0.9) + (0.1 * delay_nlp))

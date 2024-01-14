@@ -1,13 +1,32 @@
 from math import radians, cos, sin, asin, sqrt
 import pandas as pd
 import pickle
+import time
+
+def time_logger(func):
+    """
+    Decorator that prints the time taken by a function to run.
+
+    Args:
+        func: The function to be decorated.
+
+    Returns:
+        The decorated function.
+    """
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        print(f"Function {func.__name__} took {elapsed_time:.2f} seconds to run.")
+        return result
+    return wrapper
 
 # Helper function to extract the first element from a list
 def first_element(list_like):
     if isinstance(list_like, list) and len(list_like) > 0:
         return list_like[0]
     return list_like
-
 
 # Function to load the airport dictionary
 def load_airport_dict(filename):

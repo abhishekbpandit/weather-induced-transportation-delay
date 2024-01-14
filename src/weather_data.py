@@ -24,8 +24,6 @@ def find_closest_weather_data(hourly_weather, expected_time):
             closest_weather = weather
     return closest_weather
 
-    
-
 @lru_cache(maxsize=None)
 def fetch_weather_data(lat, lon, date_time):
     """

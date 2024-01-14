@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup as Soup
 from langchain_community.document_loaders.recursive_url_loader import RecursiveUrlLoader
 from serpapi import GoogleSearch
 from datetime import datetime, timedelta
+from util.util import time_logger
 
 # URL of your Flask app for processing articles
 PROCESS_ARTICLE_URL = "https://a9cf-35-243-113-176.ngrok-free.app/process_article"
@@ -82,6 +83,7 @@ def get_delay(articles, source, destination):
     else:
         return []
 
+@time_logger
 def estimate_delay_nlp(source, destination, departure_date):
     """Estimate delay using NLP on fetched articles."""
     query = create_query(source, destination)
