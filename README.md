@@ -1,7 +1,5 @@
 # Weather Induced Flight Delay
 
-## Methodology
-
 ## Overview
 This project aims to predict flight delays by combining machine learning and natural language processing techniques. It uses a Streamlit app for user input, processes flight route data, analyzes weather conditions at each route point, and utilizes news articles to estimate delays.
 
