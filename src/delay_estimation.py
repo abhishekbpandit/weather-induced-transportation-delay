@@ -32,7 +32,9 @@ def add_dep_time_to_weather_data(weather_data, departure_time, training_columns)
     })
 
     # Handle potential list in 'preciptype' and remove 'stations' key
-    weather_data['preciptype'] = weather_data.get('preciptype', [''])[0]
+    if isinstance(weather_data['preciptype'], list) and len(weather_data['preciptype']) > 0:
+        weather_data['preciptype'] = weather_data['preciptype'][0]
+        
     weather_data.pop('stations', None)
 
     # Create DataFrame and handle categorical data
